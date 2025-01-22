@@ -1,14 +1,24 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Controller, Get, Body, Post } from '@nestjs/common';
 import { MerchantAnalysisService } from './merchant-analysis.service';
-import { NormalizeMerchantDto } from './dtos/normalize-merchant.dto';
+import { MemoryStoreService } from '../shared/memory-store.service';
 
 @Controller('api/analyze')
 export class MerchantAnalysisController {
-  constructor(private readonly merchantAnalysisService: MerchantAnalysisService) {}
+  constructor(
+    private readonly merchantAnalysisService: MerchantAnalysisService,
+    private readonly memoryStoreService: MemoryStoreService,
+  ) {}
 
   @Post('merchant')
-  async normalizeMerchant(@Body('transaction') dto: NormalizeMerchantDto) {
-    const result = await this.merchantAnalysisService.normalize(dto);
-    return { normalized: result };
+  async normalizeMerchant(@Body('transaction') dto) {
+    return {
+      normalized: await this.merchantAnalysisService.normalize(dto),
+    };
+  }
+
+  @Get('merchants')
+  async getAllMerchants() {
+    const normalized = this.memoryStoreService.getNormalizedResults();
+    return { normalizedTransactions: normalized };
   }
 }

@@ -1,0 +1,98 @@
+{
+    "info": {
+      "name": "Transaction Analysis API",
+      "_postman_id": "6f451674-8834-4982-a7df-ab9a5166dc29",
+      "description": "Collection for merchant normalization, pattern detection, and file upload endpoints",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "1) Merchant Normalization",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"transaction\": {\n      \"description\": \"AMZN MKTP US*Z1234ABC\",\n      \"amount\": 89.97,\n      \"date\": \"2024-01-01\"\n    }\n}"
+          },
+          "url": {
+            "raw": "http://localhost:3000/api/analyze/merchant",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "3000",
+            "path": [
+              "api",
+              "analyze",
+              "merchant"
+            ]
+          }
+        }
+      },
+      {
+        "name": "2) Pattern Detection",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n    \"transactions\": [\n      {\n        \"description\": \"NETFLIX\",\n        \"amount\": 19.99,\n        \"date\": \"2024-01-01\"\n      },\n      {\n        \"description\": \"UBER   *TRIP HELP.UBER.CO\",\n        \"amount\": 35.50,\n        \"date\": \"2024-01-02\"\n      }\n    ]\n}"
+          },
+          "url": {
+            "raw": "http://localhost:3000/api/analyze/patterns",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "3000",
+            "path": [
+              "api",
+              "analyze",
+              "patterns"
+            ]
+          }
+        }
+      },
+      {
+        "name": "3) File Upload (CSV)",
+        "request": {
+          "method": "POST",
+          "header": [],
+          "body": {
+            "mode": "formdata",
+            "formdata": [
+              {
+                "key": "file",
+                "type": "file",
+                "src": "/path/to/sample.csv"
+              }
+            ]
+          },
+          "url": {
+            "raw": "http://localhost:3000/api/upload",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "3000",
+            "path": [
+              "api",
+              "upload"
+            ]
+          }
+        }
+      }
+    ]
+  }
+  

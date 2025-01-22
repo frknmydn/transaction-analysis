@@ -1,8 +1,11 @@
+// src/upload/upload.service.ts
+
 import { Injectable } from '@nestjs/common';
 import { MerchantAnalysisService } from '../merchant-analysis/merchant-analysis.service';
 import { PatternAnalysisService } from '../pattern-analysis/pattern-analysis.service';
-import * as csvParser from 'csv-parser';
 import { Readable } from 'stream';
+import * as csvParser from 'csv-parser';
+import { MemoryStoreService } from '../shared/memory-store.service';
 import { NormalizedMerchant } from 'src/merchant-analysis/interfaces/normalized-merchant.interface';
 
 @Injectable()
@@ -10,9 +13,10 @@ export class UploadService {
   constructor(
     private readonly merchantAnalysisService: MerchantAnalysisService,
     private readonly patternAnalysisService: PatternAnalysisService,
+    private readonly memoryStoreService: MemoryStoreService,
   ) {}
 
-  async parseAndProcess(file: Express.Multer.File): Promise<any> {
+  async parseAndStore(file: Express.Multer.File): Promise<any> {
     const rows: any[] = [];
 
     // 1. CSV parse
@@ -25,19 +29,16 @@ export class UploadService {
         .on('end', resolve);
     });
 
-    // 2. Merchant Normalization
-    const normalizedResults: { original: string; normalized: NormalizedMerchant }[] = [];
+    const normalizedResults: { original: any; normalized: NormalizedMerchant }[] = [];
     for (const row of rows) {
       const description = row.description;
       const amount = parseFloat(row.amount);
       const date = row.date;
-
       const normalized = await this.merchantAnalysisService.normalize({
         description,
         amount,
         date,
       });
-
       normalizedResults.push({
         original: description,
         normalized,
@@ -53,10 +54,21 @@ export class UploadService {
       })),
     );
 
+    this.memoryStoreService.setNormalizedResults(normalizedResults);
+    this.memoryStoreService.setDetectedPatterns(patterns);
+
+    const totalSpend = this.calculateTotal(rows);
+    const transactionCount = rows.length;
+    
+
     return {
       rowCount: rows.length,
-      normalizedTransactions: normalizedResults,
-      detectedPatterns: patterns,
+      totalSpend,
+      message: 'Data parsed and stored successfully',
     };
+  }
+
+  private calculateTotal(rows: any[]): number {
+    return rows.reduce((acc, r) => acc + parseFloat(r.amount), 0);
   }
 }

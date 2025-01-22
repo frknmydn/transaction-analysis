@@ -1,9 +1,14 @@
-import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsArray, IsString, IsNumber, IsDateString, ValidateNested } from 'class-validator';
 
-class TransactionDto {
+export class TransactionDto {
+  @IsString()
   description: string;
+
+  @IsNumber()
   amount: number;
+
+  @IsDateString()
   date: string;
 }
 
