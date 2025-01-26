@@ -1,0 +1,12 @@
+{
+    "Amazon": { "category": "Shopping", "subCategory": "Online Retail" },
+    "Netflix": { "category": "Entertainment", "subCategory": "Streaming Service" },
+    "Uber": { "category": "Transportation", "subCategory": "Ride Sharing" },
+    "Spotify": { "category": "Entertainment", "subCategory": "Music Streaming" },
+    "Starbucks": { "category": "Food & Beverage", "subCategory": "Coffee Shop" },
+    "Walmart": { "category": "Shopping", "subCategory": "Retail" },
+    "Shell": { "category": "Transportation", "subCategory": "Gas Station" },
+    "DoorDash": { "category": "Food & Beverage", "subCategory": "Food Delivery" },
+    "Apple": { "category": "Digital Services", "subCategory": "App Store / Subscriptions" },
+    "Target": { "category": "Shopping", "subCategory": "Retail" }
+  }

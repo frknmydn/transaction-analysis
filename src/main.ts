@@ -5,7 +5,6 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global Validation Pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

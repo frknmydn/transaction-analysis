@@ -1,12 +1,21 @@
-// src/upload/upload.service.ts
-
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { MerchantAnalysisService } from '../merchant-analysis/merchant-analysis.service';
 import { PatternAnalysisService } from '../pattern-analysis/pattern-analysis.service';
 import { Readable } from 'stream';
 import * as csvParser from 'csv-parser';
 import { MemoryStoreService } from '../shared/memory-store.service';
 import { NormalizedMerchant } from 'src/merchant-analysis/interfaces/normalized-merchant.interface';
+
+interface TransactionRow {
+  description: string;
+  amount: string;
+  date: string;
+}
+
+export interface NormalizedResult {
+  original: string;
+  normalized: NormalizedMerchant;
+}
 
 @Injectable()
 export class UploadService {
@@ -16,10 +25,20 @@ export class UploadService {
     private readonly memoryStoreService: MemoryStoreService,
   ) {}
 
-  async parseAndStore(file: Express.Multer.File): Promise<any> {
-    const rows: any[] = [];
-
-    // 1. CSV parse
+  async parseAndStore(file: Express.Multer.File): Promise<{
+    normalized_transactions: {
+      original: string;
+      normalized: NormalizedMerchant;
+    }[];
+    detected_patterns: any[];
+  }> {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('Invalid file upload');
+    }
+  
+    const rows: TransactionRow[] = [];
+  
+    // Parse CSV
     await new Promise<void>((resolve, reject) => {
       const stream = Readable.from(file.buffer);
       stream
@@ -29,46 +48,31 @@ export class UploadService {
         .on('end', resolve);
     });
 
-    const normalizedResults: { original: any; normalized: NormalizedMerchant }[] = [];
-    for (const row of rows) {
-      const description = row.description;
-      const amount = parseFloat(row.amount);
-      const date = row.date;
-      const normalized = await this.merchantAnalysisService.normalize({
-        description,
-        amount,
-        date,
-      });
-      normalizedResults.push({
-        original: description,
-        normalized,
-      });
-    }
-
-    // 3. Pattern Detection (toplu)
-    const patterns = await this.patternAnalysisService.detect(
+    // it should be batched i guess
+    const normalizedResults = await this.merchantAnalysisService.normalizeBatch(
+      rows.map((row) => ({
+        description: row.description,
+        amount: parseFloat(row.amount),
+        date: row.date,
+      })),
+    );
+  
+    const normalized_transactions = rows.map((row, index) => ({
+      original: row.description,
+      normalized: normalizedResults[index],
+    }));
+  
+    const detected_patterns = await this.patternAnalysisService.detect(
       rows.map((r) => ({
         description: r.description,
         amount: parseFloat(r.amount),
         date: r.date,
       })),
     );
-
-    this.memoryStoreService.setNormalizedResults(normalizedResults);
-    this.memoryStoreService.setDetectedPatterns(patterns);
-
-    const totalSpend = this.calculateTotal(rows);
-    const transactionCount = rows.length;
-    
-
+  
     return {
-      rowCount: rows.length,
-      totalSpend,
-      message: 'Data parsed and stored successfully',
+      normalized_transactions,
+      detected_patterns,
     };
-  }
-
-  private calculateTotal(rows: any[]): number {
-    return rows.reduce((acc, r) => acc + parseFloat(r.amount), 0);
   }
 }

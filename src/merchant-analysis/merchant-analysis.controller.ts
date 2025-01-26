@@ -12,7 +12,7 @@ export class MerchantAnalysisController {
   @Post('merchant')
   async normalizeMerchant(@Body('transaction') dto) {
     return {
-      normalized: await this.merchantAnalysisService.normalize(dto),
+      normalized: await this.merchantAnalysisService.normalizeBatch(dto),
     };
   }
 
