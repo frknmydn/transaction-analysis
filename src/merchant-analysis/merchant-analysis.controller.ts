@@ -1,6 +1,8 @@
-import { Controller, Get, Body, Post } from '@nestjs/common';
+import { Controller, Get, Post, Body, UsePipes, ValidationPipe } from '@nestjs/common';
 import { MerchantAnalysisService } from './merchant-analysis.service';
 import { MemoryStoreService } from '../shared/memory-store.service';
+import { NormalizeMerchantDto } from './dtos/normalize-merchant.dto';
+import { NormalizedMerchant } from './interfaces/normalized-merchant.interface';
 
 @Controller('api/analyze')
 export class MerchantAnalysisController {
@@ -10,14 +12,18 @@ export class MerchantAnalysisController {
   ) {}
 
   @Post('merchant')
-  async normalizeMerchant(@Body('transaction') dto) {
-    return {
-      normalized: await this.merchantAnalysisService.normalizeBatch(dto),
-    };
+  @UsePipes(new ValidationPipe({ transform: true })) // Enable validation and transformation
+  async normalizeMerchant(
+    @Body('transaction') dto: NormalizeMerchantDto,
+  ): Promise<{ normalized: NormalizedMerchant }> {
+    // Normalize the merchant
+    const normalized = await this.merchantAnalysisService.normalizeSingle(dto.description);
+    return { normalized };
   }
 
   @Get('merchants')
-  async getAllMerchants() {
+  async getAllMerchants(): Promise<{ normalizedTransactions: any[] }> {
+    // Retrieve all normalized results from memory
     const normalized = this.memoryStoreService.getNormalizedResults();
     return { normalizedTransactions: normalized };
   }
