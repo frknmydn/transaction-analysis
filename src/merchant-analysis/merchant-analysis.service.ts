@@ -1,19 +1,33 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OpenaiService } from '../ai/open-ai.service';
+import { MemoryStoreService } from '../shared/memory-store.service';
 import { NormalizedMerchant } from './interfaces/normalized-merchant.interface';
 
 @Injectable()
 export class MerchantAnalysisService {
   private readonly logger = new Logger(MerchantAnalysisService.name);
 
-  constructor(private readonly openaiService: OpenaiService) { }
+  constructor(
+    private readonly openaiService: OpenaiService,
+    private readonly memoryStore: MemoryStoreService,
+  ) {}
 
   async normalizeSingle(description: string): Promise<NormalizedMerchant> {
     try {
+      // Check cache first
+      if (this.memoryStore.hasMerchant(description)) {
+        return this.memoryStore.getMerchant(description);
+      }
+
+      // If not in cache, normalize using OpenAI
       const normalizedNames = await this.openaiService.normalizeMerchants([description]);
       const name = normalizedNames[0] || 'Unknown Merchant';
+      const normalizedMerchant = this.createNormalizedMerchant(name);
 
-      return this.createNormalizedMerchant(name);
+      // Store in cache
+      this.memoryStore.setMerchant(description, normalizedMerchant);
+
+      return normalizedMerchant;
     } catch (error) {
       this.logger.error('Error normalizing merchant:', error);
       throw new Error('Failed to normalize merchant');
@@ -24,16 +38,46 @@ export class MerchantAnalysisService {
     transactions: { description: string; amount: number; date: string }[],
   ): Promise<NormalizedMerchant[]> {
     try {
-      const descriptions = transactions.map((t) => t.description);
-      const normalizedNames = await this.openaiService.normalizeMerchants(descriptions);
-      return normalizedNames.map((name) => this.createNormalizedMerchant(name));
-      
+      const results: NormalizedMerchant[] = [];
+      const descriptionsToNormalize: string[] = [];
+      const indexMap: number[] = [];
+
+      // Check which descriptions need normalization
+      transactions.forEach((transaction, index) => {
+        if (this.memoryStore.hasMerchant(transaction.description)) {
+          results[index] = this.memoryStore.getMerchant(transaction.description);
+        } else {
+          descriptionsToNormalize.push(transaction.description);
+          indexMap.push(index);
+        }
+      });
+
+      // Only call OpenAI for new descriptions
+      if (descriptionsToNormalize.length > 0) {
+        const normalizedNames = await this.openaiService.normalizeMerchants(descriptionsToNormalize);
+        
+        // Process and store new normalizations
+        normalizedNames.forEach((name, i) => {
+          const normalizedMerchant = this.createNormalizedMerchant(name);
+          const originalDescription = descriptionsToNormalize[i];
+          const originalIndex = indexMap[i];
+          
+          // Store in cache
+          this.memoryStore.setMerchant(originalDescription, normalizedMerchant);
+          
+          // Add to results array
+          results[originalIndex] = normalizedMerchant;
+        });
+      }
+
+      return results;
     } catch (error) {
       this.logger.error('Error normalizing merchants:', error);
       throw new Error('Failed to normalize merchants');
     }
   }
 
+  // Rest of the methods remain the same
   private createNormalizedMerchant(name: string): NormalizedMerchant {
     return {
       merchant: name || 'Unknown Merchant',
@@ -46,7 +90,7 @@ export class MerchantAnalysisService {
   }
 
   private inferCategory(merchant: string): string {
-    // Enhanced category inference
+    // Category inference logic remains the same
     const merchantLower = merchant.toLowerCase();
     if (merchantLower.includes('amazon')) return 'Shopping';
     if (merchantLower.includes('netflix')) return 'Entertainment';
@@ -59,7 +103,7 @@ export class MerchantAnalysisService {
   }
 
   private inferSubCategory(merchant: string): string {
-    // Enhanced sub-category inference
+    // Sub-category inference logic remains the same
     const merchantLower = merchant.toLowerCase();
     if (merchantLower.includes('amazon')) return 'Online Retail';
     if (merchantLower.includes('netflix')) return 'Streaming Service';
@@ -72,7 +116,6 @@ export class MerchantAnalysisService {
   }
 
   private isSubscription(merchant: string): boolean {
-    // Enhanced subscription detection
     const subscriptionMerchants = [
       'netflix', 
       'spotify', 
@@ -87,7 +130,6 @@ export class MerchantAnalysisService {
   }
 
   private inferFlags(merchant: string): string[] {
-    // Enhanced flag inference
     const merchantLower = merchant.toLowerCase();
     const flags: string[] = [];
 

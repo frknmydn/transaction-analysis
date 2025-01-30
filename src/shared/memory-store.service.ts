@@ -2,20 +2,21 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class MemoryStoreService {
-  private normalizedResults: any[] = [];
-  private detectedPatterns: any[] = [];
+  private merchantStore = new Map<string, any>();
 
-  setNormalizedResults(results: any[]) {
-    this.normalizedResults = results;
-  }
-  getNormalizedResults() {
-    return this.normalizedResults;
+  setMerchant(originalDescription: string, normalizedData: any): void {
+    this.merchantStore.set(originalDescription, normalizedData);
   }
 
-  setDetectedPatterns(patterns: any[]) {
-    this.detectedPatterns = patterns;
+  getMerchant(originalDescription: string): any | undefined {
+    return this.merchantStore.get(originalDescription);
   }
-  getDetectedPatterns() {
-    return this.detectedPatterns;
+
+  hasMerchant(originalDescription: string): boolean {
+    return this.merchantStore.has(originalDescription);
+  }
+
+  clearStore(): void {
+    this.merchantStore.clear();
   }
 }

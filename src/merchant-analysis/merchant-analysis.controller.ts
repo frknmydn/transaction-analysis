@@ -21,10 +21,4 @@ export class MerchantAnalysisController {
     return { normalized };
   }
 
-  @Get('merchants')
-  async getAllMerchants(): Promise<{ normalizedTransactions: any[] }> {
-    // Retrieve all normalized results from memory
-    const normalized = this.memoryStoreService.getNormalizedResults();
-    return { normalizedTransactions: normalized };
-  }
 }

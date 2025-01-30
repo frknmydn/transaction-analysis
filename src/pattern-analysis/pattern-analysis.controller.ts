@@ -16,9 +16,4 @@ export class PatternAnalysisController {
     return { patterns };
   }
 
-  @Get('patterns')
-  async getDetectedPatterns() {
-    const patterns = this.memoryStoreService.getDetectedPatterns();
-    return { detectedPatterns: patterns };
-  }
 }
