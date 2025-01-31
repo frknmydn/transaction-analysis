@@ -1,99 +1,151 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+AI-Powered Transaction Analysis System
+A NestJS backend that analyzes financial transactions using OpenAI. It:
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Normalizes Merchants: Maps raw transaction descriptions to structured merchant info (merchant name, category, subcategory, etc.).
+Detects Patterns: Identifies recurring charges, subscriptions, and other patterns.
+Processes CSV Files: Accepts CSV upload for bulk analysis.
+Provides Summary Statistics: Returns total spend, transaction count, average transaction, and distinct merchants.
+Features
+Endpoints
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+POST /api/upload:
+Accepts a CSV file (multipart/form-data).
+Returns a JSON object containing:
+normalized_transactions: Array of { original, normalized }
+detected_patterns: Array of recurring or subscription patterns
+summary: { totalSpend, transactions, avgTransaction, merchants }
+POST /api/analyze/merchant (optional): Normalizes a single or batch of transaction descriptions.
+POST /api/analyze/patterns (optional): Detects recurring patterns in a given set of transactions.
+OpenAI Integration
 
-## Description
+Utilizes GPT-3.5 or later models to interpret transaction data.
+Low temperature for consistent, stable outputs.
+Scalable Architecture
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+NestJS for modular, testable backend structure
+Potential for microservices or serverless deployment
+Requirements
+Node.js (v16+ recommended)
+npm or yarn
+OpenAI API Key
+(Optional) Docker if you want container-based deployment
+Environment Variables
+Create a .env file in the project root containing your OpenAI key and any other configs (example below). Make sure not to commit your actual key to version control:
 
-## Project setup
+bash
+Kopyala
+Düzenle
+OPENAI_API_KEY=your-api-key-here
+PORT=3000
+Installation
+Clone this repository:
+bash
+Kopyala
+Düzenle
+git clone https://github.com/your-username/transaction-analysis.git
+cd transaction-analysis
+Install dependencies:
+bash
+Kopyala
+Düzenle
+npm install
+# or
+yarn
+Run in development:
+bash
+Kopyala
+Düzenle
+npm run start:dev
+# or
+yarn start:dev
+This starts the NestJS server on http://localhost:3000 (configurable in .env).
+Usage
+1. Upload a CSV
+Send a POST request to /api/upload with multipart/form-data containing your CSV file:
 
-```bash
-$ npm install
-```
+Example using curl:
 
-## Compile and run the project
+bash
+Kopyala
+Düzenle
+curl -X POST -F "file=@path/to/transactions.csv" http://localhost:3000/api/upload
+2. Sample Response
+A successful response (HTTP 200) will look like:
 
-```bash
-# development
-$ npm run start
+json
+Kopyala
+Düzenle
+{
+  "normalized_transactions": [
+    {
+      "original": "AMZN MKTP US*Z1234ABC",
+      "normalized": {
+        "merchant": "Amazon",
+        "category": "Shopping",
+        "subCategory": "Online Retail",
+        "confidence": 0.95,
+        "isSubscription": false,
+        "flags": []
+      }
+    },
+    {
+      "original": "NETFLIX",
+      "normalized": {
+        "merchant": "Netflix",
+        "category": "Entertainment",
+        "subCategory": "Streaming Service",
+        "confidence": 0.98,
+        "isSubscription": true,
+        "flags": ["subscription"]
+      }
+    }
+  ],
+  "detected_patterns": [
+    {
+      "type": "subscription",
+      "merchant": "Netflix",
+      "amount": 19.99,
+      "frequency": "monthly",
+      "confidence": 0.98,
+      "next_expected": "2024-02-15"
+    }
+  ],
+  "summary": {
+    "totalSpend": 955.83,
+    "transactions": 26,
+    "avgTransaction": 36.76,
+    "merchants": 12
+  }
+}
+Fields:
 
-# watch mode
-$ npm run start:dev
+normalized_transactions
+Array of objects describing each transaction’s original string and the AI-inferred normalized data.
 
-# production mode
-$ npm run start:prod
-```
+detected_patterns
+Array of detected recurring patterns, e.g. subscriptions or repeated charges.
 
-## Run tests
+summary
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+totalSpend: Total negative-spend amount (e.g., sum of debits).
+transactions: Count of (negative) transactions or overall transaction count (configurable logic).
+avgTransaction: Average transaction size.
+merchants: Number of unique merchants encountered.
+Project Structure
+bash
+Kopyala
+Düzenle
+src/
+  ├─ ai/
+  │   ├─ open-ai.module.ts
+  │   └─ open-ai.service.ts       
+  ├─ merchant-analysis/
+  │   ├─ dtos/normalize-merchant.dto.ts
+  │   ├─ interfaces/normalized-merchant.interface.ts
+  │   └─ merchant-analysis.service.ts
+  ├─ pattern-analysis/
+  │   ├─ pattern-analysis.service.ts
+  └─ upload/
+      ├─ upload.controller.ts     
+      ├─ upload.module.ts
+      ├─ upload.service.ts        

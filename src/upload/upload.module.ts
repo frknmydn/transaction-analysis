@@ -4,6 +4,7 @@ import { UploadService } from './upload.service';
 import { MerchantAnalysisModule } from '../merchant-analysis/merchant-analysis.module';
 import { PatternAnalysisModule } from '../pattern-analysis/pattern-analysis.module';
 import { SharedModule } from '../shared/shared.module';
+import { SummaryStatsService } from './summary-stats.service';
 
 @Module({
   imports: [
@@ -12,6 +13,6 @@ import { SharedModule } from '../shared/shared.module';
     SharedModule,
   ],
   controllers: [UploadController],
-  providers: [UploadService],
+  providers: [UploadService, SummaryStatsService],
 })
 export class UploadModule {}

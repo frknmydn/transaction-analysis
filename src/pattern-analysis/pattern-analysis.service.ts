@@ -11,10 +11,9 @@ export class PatternAnalysisService {
     transactions: { description: string; amount: number; date: string }[],
   ): Promise<any[]> {
     try {
-      // Detect patterns using OpenAI
       const patterns = await this.openaiService.detectPattern(transactions);
 
-      // Group patterns by merchant to avoid duplicates
+      // it gorups patterns by merchant to avoid duplicates
       const uniquePatterns = this.groupPatternsByMerchant(patterns.patterns || []);
 
       return uniquePatterns;
@@ -30,21 +29,17 @@ export class PatternAnalysisService {
     for (const pattern of patterns) {
       const merchant = pattern.merchant.toLowerCase();
 
-      // If the merchant already exists in the map, update the pattern if necessary
       if (patternMap.has(merchant)) {
         const existingPattern = patternMap.get(merchant);
 
-        // Update the pattern if the new one has higher confidence
         if (pattern.confidence > existingPattern.confidence) {
           patternMap.set(merchant, pattern);
         }
       } else {
-        // Add the pattern to the map if the merchant doesn't exist
         patternMap.set(merchant, pattern);
       }
     }
 
-    // Convert the map back to an array
     return Array.from(patternMap.values());
   }
 }

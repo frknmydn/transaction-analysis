@@ -16,7 +16,6 @@ export class MerchantAnalysisController {
   async normalizeMerchant(
     @Body('transaction') dto: NormalizeMerchantDto,
   ): Promise<{ normalized: NormalizedMerchant }> {
-    // Normalize the merchant
     const normalized = await this.merchantAnalysisService.normalizeSingle(dto.description);
     return { normalized };
   }

@@ -14,17 +14,16 @@ export class MerchantAnalysisService {
 
   async normalizeSingle(description: string): Promise<NormalizedMerchant> {
     try {
-      // Check cache first
+      // it retrieves caches first
       if (this.memoryStore.hasMerchant(description)) {
         return this.memoryStore.getMerchant(description);
       }
 
-      // If not in cache, normalize using OpenAI
+      // if not in cache, normalize using OpenAI
       const normalizedNames = await this.openaiService.normalizeMerchants([description]);
       const name = normalizedNames[0] || 'Unknown Merchant';
       const normalizedMerchant = this.createNormalizedMerchant(name);
 
-      // Store in cache
       this.memoryStore.setMerchant(description, normalizedMerchant);
 
       return normalizedMerchant;
@@ -42,7 +41,6 @@ export class MerchantAnalysisService {
       const descriptionsToNormalize: string[] = [];
       const indexMap: number[] = [];
 
-      // Check which descriptions need normalization
       transactions.forEach((transaction, index) => {
         if (this.memoryStore.hasMerchant(transaction.description)) {
           results[index] = this.memoryStore.getMerchant(transaction.description);
@@ -52,20 +50,16 @@ export class MerchantAnalysisService {
         }
       });
 
-      // Only call OpenAI for new descriptions
       if (descriptionsToNormalize.length > 0) {
         const normalizedNames = await this.openaiService.normalizeMerchants(descriptionsToNormalize);
         
-        // Process and store new normalizations
         normalizedNames.forEach((name, i) => {
           const normalizedMerchant = this.createNormalizedMerchant(name);
           const originalDescription = descriptionsToNormalize[i];
           const originalIndex = indexMap[i];
           
-          // Store in cache
           this.memoryStore.setMerchant(originalDescription, normalizedMerchant);
           
-          // Add to results array
           results[originalIndex] = normalizedMerchant;
         });
       }

@@ -4,6 +4,7 @@ import { PatternAnalysisService } from '../pattern-analysis/pattern-analysis.ser
 import { Readable } from 'stream';
 import * as csvParser from 'csv-parser';
 import { NormalizedMerchant } from 'src/merchant-analysis/interfaces/normalized-merchant.interface';
+import { SummaryStatsService } from './summary-stats.service';
 
 interface TransactionRow {
   description: string;
@@ -23,17 +24,17 @@ export class UploadService {
   constructor(
     private readonly merchantAnalysisService: MerchantAnalysisService,
     private readonly patternAnalysisService: PatternAnalysisService,
-  ) {}
+    private readonly summaryStatsService: SummaryStatsService,
+  ) { }
 
   private getUniqueTransactions(transactions: NormalizedResult[]): NormalizedResult[] {
-    // Create a map to store unique transactions with their normalized data
+    // its a map to store unique transactions with their normalized data
     const uniqueTransactionsMap = new Map<string, NormalizedResult>();
 
-    // Iterate through transactions, keeping only the first occurrence with normalized data
     transactions.forEach(transaction => {
       const existing = uniqueTransactionsMap.get(transaction.original);
-      
-      // Only add if not exists, or if current has normalized data but existing doesn't
+
+      // add if not exists, or if current has normalized data but existing doesn't
       if (!existing || (!existing.normalized && transaction.normalized)) {
         uniqueTransactionsMap.set(transaction.original, transaction);
       }
@@ -45,6 +46,12 @@ export class UploadService {
   async parseAndStore(file: Express.Multer.File): Promise<{
     normalized_transactions: NormalizedResult[];
     detected_patterns: any[];
+    summary: {
+      totalSpend: number;
+      transactions: number;
+      avgTransaction: number;
+      merchants: number;
+    };
   }> {
     if (!file || !file.buffer) {
       throw new BadRequestException('Invalid file upload');
@@ -70,7 +77,6 @@ export class UploadService {
       throw new BadRequestException('Failed to process file');
     }
 
-    // Normalize merchants
     const normalizedResults = await this.merchantAnalysisService.normalizeBatch(
       rows.map((row) => ({
         description: row.description,
@@ -84,10 +90,8 @@ export class UploadService {
       normalized: normalizedResults[index],
     }));
 
-    // Get unique transactions
     const normalized_transactions = this.getUniqueTransactions(transactions);
 
-    // Detect patterns
     const detected_patterns = await this.patternAnalysisService.detect(
       rows.map((r) => ({
         description: r.description,
@@ -96,9 +100,29 @@ export class UploadService {
       })),
     );
 
+    const { totalSpend, transactions: transactionCount, avgTransaction } =
+      this.summaryStatsService.computeSummary(
+        rows.map((row) => ({
+          description: row.description,
+          amount: parseFloat(row.amount),
+          date: row.date,
+        }))
+      );
+
+    const merchants =
+      this.summaryStatsService.computeDistinctMerchants(normalizedResults);
+
+    const summary = {
+      totalSpend,
+      transactions: transactionCount,
+      avgTransaction,
+      merchants,
+    };
+
     return {
       normalized_transactions,
       detected_patterns,
+      summary,
     };
   }
 }
